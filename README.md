@@ -20,10 +20,11 @@ by your user.
 Usage
 -------
 
-* Simple Mode (not fully implemeneted yet)
+* Simple Mode
 
-Just run ttyprompt without arguments, entered password will be written to
-stdout.
+Just run ttyprompt, entered password will be written to stdout.
+
+There are some options you may want to use to customize dialog, see `ttyprompt --help`.
 
 * Polkit Agent Mode (not implemeneted yet)
 
@@ -36,8 +37,8 @@ TODO
 Room for improvement
 ----------------------
 
-- [ ] Make prompt customizable in simple mode
-- [ ] Allow to select prompt TTY
+- [x] Make prompt customizable in simple mode
+- [x] Allow to select prompt TTY
 - [ ] Implement pinentry emulation mode
   - [ ] Implement Assuan protocol wrappers
 - [ ] Polkit agent emulation mode

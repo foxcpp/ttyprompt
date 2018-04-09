@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/awnumar/memguard"
 	"github.com/foxcpp/ttyprompt/terminal"
+	flag "github.com/spf13/pflag"
 )
 
 func getOwnerUID(path string) int {
@@ -28,14 +30,20 @@ func main() {
 	memguard.DisableUnixCoreDumps()
 	defer memguard.DestroyAll()
 
-	// TODO: Parse command-line options.
 	settings := terminal.DialogSettings{
 		Title:       "Experimental! Do not use in production!",
 		Description: "Here goes more detailed request dialog",
 		Prompt:      "Enter PIN:",
 	}
+	ttyNum := flag.IntP("tty", "t", 20, "Number of VT (TTY) to use")
+	flag.StringVar(&settings.Title, "title", "", "Title text (simple mode only)")
+	flag.StringVarP(&settings.Description, "desc", "d", "", "Detailed description (simple mode only)")
+	flag.StringVar(&settings.Prompt, "prompt", "Enter PIN:", "Prompt text (simple mode only)")
+	// Hide "pflag: help requested" if --help used.
+	flag.ErrHelp = errors.New("")
+	flag.Parse()
 
-	tty, err := getTTY(20)
+	tty, err := getTTY(*ttyNum)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "failed to get target tty access:", err)
 		return
