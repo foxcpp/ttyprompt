@@ -24,7 +24,7 @@ Nothing more because this is *simple* mode.
 finishNotifyChan is used to report errors because mode functions
 runs asynchronously.
 */
-func simpleMode(tty *TTY, prompt string, finishNotifyChan chan error) {
+func simpleMode(tty *TTY, settings terminal.DialogSettings, finishNotifyChan chan error) {
 	firsttty, err := terminal.CurrentVT()
 	if err != nil {
 		finishNotifyChan <- err
@@ -36,17 +36,20 @@ func simpleMode(tty *TTY, prompt string, finishNotifyChan chan error) {
 		return
 	}
 
-	buf, n, err := terminal.AskForPassword(tty.file, prompt)
+	defer func() {
+		if err := switchToOriginalVT(tty.file, firsttty); err != nil {
+			time.Sleep(time.Second * 5)
+		}
+	}()
+
+	buf, n, err := terminal.AskForPassword(tty.file, settings)
 	if err != nil {
 		finishNotifyChan <- err
 		return
 	}
+	defer buf.Destroy()
 
 	fmt.Println(string(buf.Buffer()[:n]))
-
-	if err := switchToOriginalVT(tty.file, firsttty); err != nil {
-		time.Sleep(time.Second * 5)
-	}
 
 	tty.file.WriteString(terminal.TermClear)
 	tty.file.WriteString(terminal.TermReset)

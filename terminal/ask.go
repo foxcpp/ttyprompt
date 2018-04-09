@@ -9,6 +9,12 @@ import (
 	"github.com/awnumar/memguard"
 )
 
+type DialogSettings struct {
+	Title       string
+	Description string
+	Prompt      string
+}
+
 /*
 ReadPassword configures TTY to non-canonical mode and reads password
 byte-by-byte showing '*' for each character.
@@ -72,16 +78,16 @@ AskForPassword does everything needed to get a password from user through specif
 
 Returned values are: Pointer to password buffer, length of password, error if any.
 */
-func AskForPassword(tty *os.File, prompt string) (*memguard.LockedBuffer, int, error) {
+func AskForPassword(tty *os.File, settings DialogSettings) (*memguard.LockedBuffer, int, error) {
 	fullPrompt := TermClear + TermReset
-	fullPrompt += "ttyprompt v0.1\n"
-	fullPrompt += "################################################################################\n"
+	fullPrompt += "ttyprompt v0.1 | " + settings.Title + "\n"
+	fullPrompt += "================================================================================\n"
 	fullPrompt += "[" + time.Now().String() + "]\n"
 	fullPrompt += "\n"
-	fullPrompt += prompt
+	fullPrompt += settings.Description
 	fullPrompt += "\n\n"
 	fullPrompt += "Just press <Enter> to reject request.\n"
-	fullPrompt += ": "
+	fullPrompt += settings.Prompt + " "
 	_, err := tty.WriteString(fullPrompt)
 	if err != nil {
 		return nil, 0, errors.New("AskForPassword: " + err.Error())
