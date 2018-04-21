@@ -39,6 +39,9 @@ func main() {
 	flag.StringVar(&settings.Title, "title", "", "Title text (simple mode only)")
 	flag.StringVarP(&settings.Description, "desc", "d", "", "Detailed description (simple mode only)")
 	flag.StringVar(&settings.Prompt, "prompt", "Enter PIN:", "Prompt text (simple mode only)")
+
+	pinentry := flag.Bool("pinentry", false, "Enable pinentry emulation mode")
+
 	// Hide "pflag: help requested" if --help used.
 	flag.ErrHelp = errors.New("")
 	flag.Parse()
@@ -51,10 +54,13 @@ func main() {
 	defer tty.free()
 
 	// TODO: Polkit agent mode.
-	// TODO: Pinentry mode.
 	resNotify := make(chan error)
 
-	go simpleMode(tty, settings, resNotify)
+	if *pinentry {
+		go pinentryMode(tty, settings, resNotify)
+	} else {
+		go simpleMode(tty, settings, resNotify)
+	}
 
 	sigs := make(chan os.Signal)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
