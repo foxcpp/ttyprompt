@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"syscall"
 	"time"
@@ -16,28 +17,32 @@ type DialogSettings struct {
 }
 
 /*
-ReadPassword configures TTY to non-canonical mode and reads password
-byte-by-byte showing '*' for each character.
+TurnOnRawIO sets flags suitable for raw I/O (no echo, per-character input, etc)
+and returns original flags.
 */
-func ReadPassword(tty *os.File, output []byte) ([]byte, error) {
+func TurnOnRawIO(tty *os.File) (orig Termios, err error) {
 	termios, err := TcGetAttr(tty.Fd())
 	if err != nil {
-		return nil, errors.New("failed to configure TTY: " + err.Error())
+		return Termios{}, errors.New("TurnOnRawIO: failed to get flags: " + err.Error())
 	}
 	termiosOrig := *termios
-	defer TcSetAttr(tty.Fd(), &termiosOrig)
 
 	termios.Lflag &^= syscall.ECHO
 	termios.Lflag &^= syscall.ICANON
 	termios.Iflag &^= syscall.IXON
-	//termios.Iflag &^= syscall.IGNBRK
-	//termios.Iflag &^= syscall.BRKINT
 	termios.Iflag |= syscall.IUTF8
 	err = TcSetAttr(tty.Fd(), termios)
 	if err != nil {
-		return nil, errors.New("ReadPassword: " + err.Error())
+		return Termios{}, errors.New("TurnOnRawIO: flags to set flags: " + err.Error())
 	}
+	return termiosOrig, nil
+}
 
+/*
+ReadPassword configures TTY to non-canonical mode and reads password
+byte-by-byte showing '*' for each character.
+*/
+func ReadPassword(tty *os.File, output []byte) ([]byte, error) {
 	cursor := output[0:1]
 	readen := 0
 	for {
@@ -73,25 +78,58 @@ func ReadPassword(tty *os.File, output []byte) ([]byte, error) {
 	return output[0:readen], nil
 }
 
-/*
-AskForPassword does everything needed to get a password from user through specified TTY.
+func switchToOriginalVT(outputTty *os.File, num int) error {
+	if err := SwitchVTThrough(outputTty.Fd(), num); err != nil {
+		fmt.Fprintln(os.Stderr, "failed to switch TTY back:", err)
+		outputTty.WriteString("\nOops! We can't switch TTYs. Do it manually (i.e. Ctrl+Alt+F1).\n")
+		time.Sleep(time.Second * 5)
+		return err
+	}
+	return nil
+}
 
-Returned values are: Pointer to password buffer, length of password, error if any.
-*/
-func AskForPassword(tty *os.File, settings DialogSettings) (*memguard.LockedBuffer, int, error) {
+func WritePrompt(tty *os.File, settings DialogSettings) error {
 	fullPrompt := TermClear + TermReset
 	fullPrompt += "ttyprompt v0.1 | " + settings.Title + "\n"
 	fullPrompt += "================================================================================\n"
 	fullPrompt += "[" + time.Now().String() + "]\n"
 	fullPrompt += "\n"
 	fullPrompt += settings.Description
-	fullPrompt += "\n\n"
-	fullPrompt += "Just press <Enter> to reject request.\n"
+	fullPrompt += "\n"
 	fullPrompt += settings.Prompt + " "
 	_, err := tty.WriteString(fullPrompt)
 	if err != nil {
-		return nil, 0, errors.New("AskForPassword: " + err.Error())
+		return errors.New("WritePrompt: " + err.Error())
 	}
+	return nil
+}
+
+/*
+AskForPassword does everything needed to get a password from user through specified TTY.
+
+Returned values are: Pointer to password buffer, length of password, error if any.
+*/
+func AskForPassword(tty *os.File, ttyNum int, settings DialogSettings) (*memguard.LockedBuffer, int, error) {
+	firsttty, err := CurrentVT()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if err := SwitchVTThrough(tty.Fd(), ttyNum); err != nil {
+		return nil, 0, err
+	}
+	defer switchToOriginalVT(tty, firsttty)
+
+	settings.Description += "\n\nJust press <Enter> to reject request."
+	if WritePrompt(tty, settings); err != nil {
+		return nil, 0, err
+	}
+
+	origTermios, err := TurnOnRawIO(tty)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer TcSetAttr(tty.Fd(), &origTermios)
 
 	bufHandle, err := memguard.NewMutable(2048)
 	if err != nil {
@@ -100,10 +138,66 @@ func AskForPassword(tty *os.File, settings DialogSettings) (*memguard.LockedBuff
 
 	slice, err := ReadPassword(tty, bufHandle.Buffer())
 	if err != nil {
-		return nil, 0, errors.New("AskForPassword: " + err.Error())
+		return nil, 0, err
 	}
 	if len(slice) == 0 {
 		return nil, 0, errors.New("AskForPassword: prompt rejected")
 	}
 	return bufHandle, len(slice), nil
+}
+
+func AskToConfirm(tty *os.File, ttyNum int, settings DialogSettings) (bool, error) {
+	firsttty, err := CurrentVT()
+	if err != nil {
+		return false, err
+	}
+
+	if err := SwitchVTThrough(tty.Fd(), ttyNum); err != nil {
+		return false, err
+	}
+	defer switchToOriginalVT(tty, firsttty)
+
+	if WritePrompt(tty, settings); err != nil {
+		return false, err
+	}
+
+	origTermios, err := TurnOnRawIO(tty)
+	if err != nil {
+		return false, err
+	}
+	defer TcSetAttr(tty.Fd(), &origTermios)
+
+	chr := make([]byte, 1)
+	if tty.Read(chr); err != nil {
+		return false, err
+	}
+
+	if chr[0] == 'Y' || chr[0] == 'y' {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func ShowMessage(tty *os.File, ttyNum int, settings DialogSettings) error {
+	firsttty, err := CurrentVT()
+	if err != nil {
+		return err
+	}
+
+	if err := SwitchVTThrough(tty.Fd(), ttyNum); err != nil {
+		return err
+	}
+	defer switchToOriginalVT(tty, firsttty)
+
+	settings.Prompt = "Press any key."
+	if WritePrompt(tty, settings); err != nil {
+		return err
+	}
+
+	chr := make([]byte, 1)
+	if tty.Read(chr); err != nil {
+		return err
+	}
+	return nil
 }
