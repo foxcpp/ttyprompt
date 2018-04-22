@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	assuan "github.com/foxcpp/go-assuan/common"
@@ -108,6 +109,7 @@ func pinentryMode(tty *TTY, settings terminal.DialogSettings, finishNotifyChan c
 	}
 
 	tty.file.WriteString("Running in pinentry mode, waiting for requests...\n")
+	log.Println("Accepting pinentry requests on stdin")
 	err := pinentry.Serve(pinentry.Callbacks{getPINfunc, confirmFunc, msgFunc}, "ttyprompt v0.1.0")
 	finishNotifyChan <- err
 }

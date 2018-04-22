@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 
@@ -16,11 +15,6 @@ type TTY struct {
 }
 
 func (t *TTY) free() {
-	err := os.Chmod(t.path, 0620)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "failed to recover old access mode on", t.path, ":", err)
-	}
-
 	t.file.WriteString(terminal.TermClear)
 	t.file.WriteString(terminal.TermReset)
 
@@ -37,7 +31,6 @@ func getTTY(num int) (res *TTY, err error) {
 		return
 	}
 
-	os.Chmod(res.path, 0000)
 	res.file.WriteString("ttyprompt acquired this TTY\n")
 
 	return

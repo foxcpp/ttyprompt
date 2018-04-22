@@ -3,6 +3,7 @@ package terminal
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"syscall"
 	"time"
@@ -16,11 +17,15 @@ type DialogSettings struct {
 	Prompt      string
 }
 
+var FirstTty = -1
+
 /*
 TurnOnRawIO sets flags suitable for raw I/O (no echo, per-character input, etc)
 and returns original flags.
 */
 func TurnOnRawIO(tty *os.File) (orig Termios, err error) {
+	log.Println("Turning on raw I/O on", tty.Name())
+
 	termios, err := TcGetAttr(tty.Fd())
 	if err != nil {
 		return Termios{}, errors.New("TurnOnRawIO: failed to get flags: " + err.Error())
@@ -38,11 +43,31 @@ func TurnOnRawIO(tty *os.File) (orig Termios, err error) {
 	return termiosOrig, nil
 }
 
+func unlockTTY(tty *os.File) {
+	log.Println("Setting", tty.Name(), "access mode to 0620...")
+	err := os.Chmod(tty.Name(), 0620)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to recover old access mode on", tty.Name(), ":", err)
+	}
+}
+
+func lockTTY(tty *os.File) {
+	log.Println("Setting", tty.Name(), "access mode to 0000...")
+	err := os.Chmod(tty.Name(), 0000)
+	if err != nil {
+		panic("failed to recover old access mode on " + tty.Name() + ": " + err.Error())
+	}
+}
+
 /*
 ReadPassword configures TTY to non-canonical mode and reads password
 byte-by-byte showing '*' for each character.
 */
 func ReadPassword(tty *os.File, output []byte) ([]byte, error) {
+	lockTTY(tty)
+	defer unlockTTY(tty)
+
+	log.Println("Reading password...")
 	cursor := output[0:1]
 	readen := 0
 	for {
@@ -79,7 +104,11 @@ func ReadPassword(tty *os.File, output []byte) ([]byte, error) {
 }
 
 func switchToOriginalVT(outputTty *os.File, num int) error {
-	if err := SwitchVTThrough(outputTty.Fd(), num); err != nil {
+	if FirstTty == -1 {
+		FirstTty = num
+	}
+
+	if err := SwitchVTThrough(outputTty.Fd(), FirstTty); err != nil {
 		fmt.Fprintln(os.Stderr, "failed to switch TTY back:", err)
 		outputTty.WriteString("\nOops! We can't switch TTYs. Do it manually (i.e. Ctrl+Alt+F1).\n")
 		time.Sleep(time.Second * 5)
@@ -110,6 +139,7 @@ AskForPassword does everything needed to get a password from user through specif
 Returned values are: Pointer to password buffer, length of password, error if any.
 */
 func AskForPassword(tty *os.File, ttyNum int, settings DialogSettings) (*memguard.LockedBuffer, int, error) {
+	log.Println("Requesting password...")
 	firsttty, err := CurrentVT()
 	if err != nil {
 		return nil, 0, err
@@ -147,6 +177,7 @@ func AskForPassword(tty *os.File, ttyNum int, settings DialogSettings) (*memguar
 }
 
 func AskToConfirm(tty *os.File, ttyNum int, settings DialogSettings) (bool, error) {
+	log.Println("Requesting confirmation...")
 	firsttty, err := CurrentVT()
 	if err != nil {
 		return false, err
@@ -180,6 +211,7 @@ func AskToConfirm(tty *os.File, ttyNum int, settings DialogSettings) (bool, erro
 }
 
 func ShowMessage(tty *os.File, ttyNum int, settings DialogSettings) error {
+	log.Println("Showing message...")
 	firsttty, err := CurrentVT()
 	if err != nil {
 		return err

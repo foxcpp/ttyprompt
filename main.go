@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -14,8 +16,10 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+var debugOut bool
+
 func emulatePinentryOptions() (ttyNum int, err error) {
-	flag.BoolP("debug", "d", false, "No-op")
+	flag.BoolVarP(&debugOut, "debug", "d", false, "Write debug information to stderr")
 	flag.StringP("display", "D", "", "No-op")
 	ttyName := flag.StringP("ttyname", "T", "/dev/tty20", "Set the tty terminal node name; only /dev/tty* supported")
 	flag.StringP("ttytype", "N", "", "No-op; always 'linux'")
@@ -37,7 +41,7 @@ func emulatePinentryOptions() (ttyNum int, err error) {
 
 	ttyNum, err = strconv.Atoi((*ttyName)[8:])
 	if err != nil {
-		return -1, errors.New("only virtual terminals supported for -T argument")
+		return 20, nil
 	}
 
 	return ttyNum, nil
@@ -64,6 +68,7 @@ func main() {
 		flag.StringVar(&settings.Title, "title", "", "Title text (simple mode only)")
 		flag.StringVarP(&settings.Description, "desc", "d", "", "Detailed description (simple mode only)")
 		flag.StringVar(&settings.Prompt, "prompt", "Enter PIN:", "Prompt text (simple mode only)")
+		flag.BoolVarP(&debugOut, "debug", "D", false, "Log debug information to stderr")
 
 		flag.BoolVar(&pinentry, "pinentry", false, "Enable pinentry emulation mode")
 
@@ -81,6 +86,14 @@ func main() {
 		}
 	}
 
+	if debugOut {
+		log.SetPrefix("DEBUG: ")
+		log.SetOutput(os.Stderr)
+	} else {
+		log.SetOutput(ioutil.Discard)
+	}
+
+	log.Println("Getting TTY...")
 	tty, err := getTTY(ttyNum)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "failed to get target tty access:", err)
@@ -93,8 +106,10 @@ func main() {
 	resNotify := make(chan error)
 
 	if pinentry {
+		log.Println("Going into pinentry mode...")
 		go pinentryMode(tty, settings, resNotify)
 	} else {
+		log.Println("Going into simple mode...")
 		go simpleMode(tty, settings, resNotify)
 	}
 
