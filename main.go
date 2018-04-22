@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/awnumar/memguard"
@@ -12,13 +14,33 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-func getOwnerUID(path string) int {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return 0
+func emulatePinentryOptions() (ttyNum int, err error) {
+	flag.BoolP("debug", "d", false, "No-op")
+	flag.StringP("display", "D", "", "No-op")
+	ttyName := flag.StringP("ttyname", "T", "/dev/tty20", "Set the tty terminal node name; only /dev/tty* supported")
+	flag.StringP("ttytype", "N", "", "No-op; always 'linux'")
+	flag.StringP("lc-ctype", "C", "", "No-op")
+	flag.StringP("lc-messages", "M", "", "No-op")
+	flag.Int64P("timeout", "o", 0, "No-op; ttyprompt doesn't supports timeouts")
+	flag.BoolP("no-global-grab", "g", false, "No-op")
+	flag.BoolP("parent-wid", "W", false, "No-op")
+	flag.StringP("colors", "c", "", "No-op")
+	flag.StringP("ttyalert", "a", "", "No-op")
+
+	// Hide "pflag: help requested" if --help used.
+	flag.ErrHelp = errors.New("")
+	flag.Parse()
+
+	if !strings.HasPrefix(*ttyName, "/dev/tty") {
+		return -1, errors.New("only virtual terminals supported for -T argument")
 	}
 
-	return int(fi.Sys().(*syscall.Stat_t).Uid)
+	ttyNum, err = strconv.Atoi((*ttyName)[8:])
+	if err != nil {
+		return -1, errors.New("only virtual terminals supported for -T argument")
+	}
+
+	return ttyNum, nil
 }
 
 func main() {
@@ -30,25 +52,39 @@ func main() {
 	memguard.DisableUnixCoreDumps()
 	defer memguard.DestroyAll()
 
+	pinentry := false
+	ttyNum := 20
 	settings := terminal.DialogSettings{
 		Title:       "Experimental! Do not use in production!",
 		Description: "Here goes more detailed request dialog",
 		Prompt:      "Enter PIN:",
 	}
-	ttyNum := flag.IntP("tty", "t", 20, "Number of VT (TTY) to use")
-	flag.StringVar(&settings.Title, "title", "", "Title text (simple mode only)")
-	flag.StringVarP(&settings.Description, "desc", "d", "", "Detailed description (simple mode only)")
-	flag.StringVar(&settings.Prompt, "prompt", "Enter PIN:", "Prompt text (simple mode only)")
+	if !strings.HasSuffix(os.Args[0], "pinentry") {
+		flag.IntVarP(&ttyNum, "tty", "t", 20, "Number of VT (TTY) to use")
+		flag.StringVar(&settings.Title, "title", "", "Title text (simple mode only)")
+		flag.StringVarP(&settings.Description, "desc", "d", "", "Detailed description (simple mode only)")
+		flag.StringVar(&settings.Prompt, "prompt", "Enter PIN:", "Prompt text (simple mode only)")
 
-	pinentry := flag.Bool("pinentry", false, "Enable pinentry emulation mode")
+		flag.BoolVar(&pinentry, "pinentry", false, "Enable pinentry emulation mode")
 
-	// Hide "pflag: help requested" if --help used.
-	flag.ErrHelp = errors.New("")
-	flag.Parse()
+		// Hide "pflag: help requested" if --help used.
+		flag.ErrHelp = errors.New("")
+		flag.Parse()
+	} else {
+		pinentry = true
+		var err error
+		ttyNum, err = emulatePinentryOptions()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			exitCode = 2
+			return
+		}
+	}
 
-	tty, err := getTTY(*ttyNum)
+	tty, err := getTTY(ttyNum)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "failed to get target tty access:", err)
+		exitCode = 2
 		return
 	}
 	defer tty.free()
@@ -56,7 +92,7 @@ func main() {
 	// TODO: Polkit agent mode.
 	resNotify := make(chan error)
 
-	if *pinentry {
+	if pinentry {
 		go pinentryMode(tty, settings, resNotify)
 	} else {
 		go simpleMode(tty, settings, resNotify)
