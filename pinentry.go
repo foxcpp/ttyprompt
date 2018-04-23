@@ -11,7 +11,7 @@ import (
 )
 
 func getPIN(tty *TTY, opts pinentry.Settings) (string, *assuan.Error) {
-	defer tty.file.WriteString(terminal.TermClear)
+	defer tty.file.WriteString(terminal.TermClear + terminal.TermReset)
 	if len(opts.Error) != 0 {
 		opts.Desc += "\n\nERROR: " + opts.Error
 	}
@@ -39,7 +39,7 @@ func getPIN(tty *TTY, opts pinentry.Settings) (string, *assuan.Error) {
 }
 
 func confirm(tty *TTY, opts pinentry.Settings) (bool, *assuan.Error) {
-	defer tty.file.WriteString(terminal.TermClear)
+	defer tty.file.WriteString(terminal.TermClear + terminal.TermReset)
 	if len(opts.Error) == 0 {
 		opts.Desc += "\n\nERROR: " + opts.Error
 	}
@@ -71,7 +71,7 @@ func confirm(tty *TTY, opts pinentry.Settings) (bool, *assuan.Error) {
 }
 
 func msg(tty *TTY, opts pinentry.Settings) *assuan.Error {
-	defer tty.file.WriteString(terminal.TermClear)
+	defer tty.file.WriteString(terminal.TermClear + terminal.TermReset)
 	if len(opts.Error) == 0 {
 		opts.Desc += "\n\nERROR: " + opts.Error
 	}
@@ -97,7 +97,7 @@ func msg(tty *TTY, opts pinentry.Settings) *assuan.Error {
 	return nil
 }
 
-func pinentryMode(tty *TTY, settings terminal.DialogSettings, finishNotifyChan chan error) {
+func pinentryMode(tty *TTY, flags settings, finishNotifyChan chan error) {
 	getPINfunc := func(opts pinentry.Settings) (string, *assuan.Error) {
 		return getPIN(tty, opts)
 	}

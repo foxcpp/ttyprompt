@@ -7,21 +7,30 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/awnumar/memguard"
 	"github.com/foxcpp/ttyprompt/terminal"
 	flag "github.com/spf13/pflag"
+
+	assuan "github.com/foxcpp/go-assuan/common"
+	pinentry "github.com/foxcpp/go-assuan/pinentry"
+	assuansrv "github.com/foxcpp/go-assuan/server"
 )
 
-var debugOut bool
+type settings struct {
+	noChmod  bool
+	debugLog bool
+	ttyNum   int
+	simple   terminal.DialogSettings
+	pinentry bool
+}
 
-func emulatePinentryOptions() (ttyNum int, err error) {
-	flag.BoolVarP(&debugOut, "debug", "d", false, "Write debug information to stderr")
+func parsePinentryFlags(flags *settings) {
+	flag.BoolVarP(&flags.debugLog, "debug", "d", false, "Write debug information to stderr")
 	flag.StringP("display", "D", "", "No-op")
-	ttyName := flag.StringP("ttyname", "T", "/dev/tty20", "Set the tty terminal node name; only /dev/tty* supported")
+	flag.StringP("ttyname", "T", "", "No-op")
 	flag.StringP("ttytype", "N", "", "No-op; always 'linux'")
 	flag.StringP("lc-ctype", "C", "", "No-op")
 	flag.StringP("lc-messages", "M", "", "No-op")
@@ -31,23 +40,42 @@ func emulatePinentryOptions() (ttyNum int, err error) {
 	flag.StringP("colors", "c", "", "No-op")
 	flag.StringP("ttyalert", "a", "", "No-op")
 
+	flag.IntVarP(&flags.ttyNum, "tty", "t", 20, "Number of VT (TTY) to use")
+
 	// Hide "pflag: help requested" if --help used.
 	flag.ErrHelp = errors.New("")
 	flag.Parse()
+}
 
-	if !strings.HasPrefix(*ttyName, "/dev/tty") {
-		return -1, errors.New("only virtual terminals supported for -T argument")
-	}
+func parseRegularFlags(flags *settings) {
+	flag.BoolVarP(&flags.debugLog, "debug", "D", false, "Log debug information to stderr")
 
-	ttyNum, err = strconv.Atoi((*ttyName)[8:])
-	if err != nil {
-		return 20, nil
-	}
+	flag.IntVarP(&flags.ttyNum, "tty", "t", 20, "Number of VT (TTY) to use")
+	flag.BoolVar(&flags.noChmod, "no-chmod", false, "Don't do chmod 000 on used TTY")
 
-	return ttyNum, nil
+	flag.StringVar(&flags.simple.Title, "title", "Experimental!", "Title text (simple mode only)")
+	flag.StringVarP(&flags.simple.Description, "desc", "d", "*no detailed description*", "Detailed description (simple mode only)")
+	flag.StringVar(&flags.simple.Prompt, "prompt", "Enter password:", "Prompt text (simple mode only)")
+
+	flag.BoolVar(&flags.pinentry, "pinentry", false, "Enable pinentry emulation mode")
+
+	// Hide "pflag: help requested" if --help used.
+	flag.ErrHelp = errors.New("")
+	flag.Parse()
+}
+
+func enableDebugLog() {
+	log.SetPrefix("DEBUG: ")
+	log.SetOutput(os.Stderr)
+
+	assuan.Logger.SetOutput(os.Stderr)
+	assuansrv.Logger.SetOutput(os.Stderr)
+	pinentry.Logger.SetOutput(os.Stderr)
 }
 
 func main() {
+	// This way we can return with custom exit code and have defer statements
+	// executed.
 	exitCode := 0
 	defer func() {
 		os.Exit(exitCode)
@@ -56,61 +84,47 @@ func main() {
 	memguard.DisableUnixCoreDumps()
 	defer memguard.DestroyAll()
 
-	pinentry := false
-	ttyNum := 20
-	settings := terminal.DialogSettings{
-		Title:       "Experimental! Do not use in production!",
-		Description: "Here goes more detailed request dialog",
-		Prompt:      "Enter PIN:",
-	}
-	if !strings.HasSuffix(os.Args[0], "pinentry") {
-		flag.IntVarP(&ttyNum, "tty", "t", 20, "Number of VT (TTY) to use")
-		flag.StringVar(&settings.Title, "title", "", "Title text (simple mode only)")
-		flag.StringVarP(&settings.Description, "desc", "d", "", "Detailed description (simple mode only)")
-		flag.StringVar(&settings.Prompt, "prompt", "Enter PIN:", "Prompt text (simple mode only)")
-		flag.BoolVarP(&debugOut, "debug", "D", false, "Log debug information to stderr")
-
-		flag.BoolVar(&pinentry, "pinentry", false, "Enable pinentry emulation mode")
-
-		// Hide "pflag: help requested" if --help used.
-		flag.ErrHelp = errors.New("")
-		flag.Parse()
+	flags := settings{}
+	if strings.HasSuffix(os.Args[0], "pinentry") {
+		parsePinentryFlags(&flags)
 	} else {
-		pinentry = true
-		var err error
-		ttyNum, err = emulatePinentryOptions()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			exitCode = 2
-			return
-		}
+		parseRegularFlags(&flags)
 	}
 
-	if debugOut {
-		log.SetPrefix("DEBUG: ")
-		log.SetOutput(os.Stderr)
+	if flags.debugLog {
+		enableDebugLog()
 	} else {
 		log.SetOutput(ioutil.Discard)
 	}
 
 	log.Println("Getting TTY...")
-	tty, err := getTTY(ttyNum)
+	tty, err := getTTY(flags.ttyNum)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "failed to get target tty access:", err)
 		exitCode = 2
 		return
 	}
 	defer tty.free()
+	// In case of signal terminal may be left in unclear state.
+	defer tty.file.WriteString(terminal.TermClear + terminal.TermReset)
+
+	if !flags.noChmod {
+		terminal.LockTTY(tty.file)
+		defer terminal.UnlockTTY(tty.file)
+	}
 
 	// TODO: Polkit agent mode.
 	resNotify := make(chan error)
 
-	if pinentry {
+	// We need to handle signals asynchronously.
+	// Note: It's dangerous because defer statements in mode functions and
+	// others called from there WILL NOT EXECUTED.
+	if flags.pinentry {
 		log.Println("Going into pinentry mode...")
-		go pinentryMode(tty, settings, resNotify)
+		go pinentryMode(tty, flags, resNotify)
 	} else {
 		log.Println("Going into simple mode...")
-		go simpleMode(tty, settings, resNotify)
+		go simpleMode(tty, flags, resNotify)
 	}
 
 	sigs := make(chan os.Signal)

@@ -30,17 +30,32 @@ There are some options you may want to use to customize dialog, see `ttyprompt -
 
 TODO
 
-* Pinentry Emulation Mode (not implemeneted yet)
+* Pinentry Emulation Mode
 
-TODO
+  ttyprompt can partially replace pinentry for GnuPG.
+
+  1. Create wrapper script with following contents:
+  ```
+  #!/bin/sh
+  ttyprompt --pinentry
+  ```
+
+  2. Add `pinentry-program path-to-wrapper-script` to `.gnupg/gpg-agent.conf`.
+
+  3. Make sure to restart gpg-agent: `gpgconf --kill gpg-agent`.
+
+  Known issues:
+  - ttyprompt _sometimes_ may crash X server if using nouveau driver (other driver may be affected too).
+    It's know that it will crash X server if used during key generation (???).
 
 Room for improvement
 ----------------------
 
 - [x] Make prompt customizable in simple mode
 - [x] Allow to select prompt TTY
-- [ ] Implement pinentry emulation mode
-  - [ ] Implement Assuan protocol wrappers
+- [x] Implement pinentry emulation mode
+  - [x] Implement Assuan protocol wrappers
+  - [ ] Fix video driver permission error.
 - [ ] Polkit agent emulation mode
   - [ ] Find a way to handle multiple requests at same time
 - [ ] Split binary by mode (to be discussed)
