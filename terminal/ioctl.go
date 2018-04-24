@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const (
@@ -16,6 +17,10 @@ const (
 
 func SwitchVT(num int) error {
 	log.Println("Switching to VT", num, "using current VT")
+
+	// Workaround (nouveau?) bug: if we switch VT's too fast we will crash X.Org.
+	time.Sleep(250 * time.Millisecond)
+
 	tty, err := CurrentVT()
 	if err != nil {
 		return errors.New("SwitchVT: " + err.Error())
@@ -36,6 +41,10 @@ func SwitchVT(num int) error {
 // SwitchVTThrough is same as SwitchVT but allows you to specify TTY descriptor (you may use any TTY).
 func SwitchVTThrough(fd uintptr, num int) error {
 	log.Println("Switching to VT", num, "using FD", fd)
+
+	// Workaround (nouveau?) bug: if we switch VT's too fast we will crash X.Org.
+	time.Sleep(250 * time.Millisecond)
+
 	_, _, errnop := syscall.Syscall(syscall.SYS_IOCTL, fd, vtActivate, uintptr(num))
 	errno := syscall.Errno(errnop)
 	if errno != 0 {

@@ -3,12 +3,79 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
 
+	"github.com/awnumar/memguard"
 	assuan "github.com/foxcpp/go-assuan/common"
 	"github.com/foxcpp/go-assuan/pinentry"
 	"github.com/foxcpp/ttyprompt/terminal"
 )
+
+func eq(a, b []byte) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	if a == nil || b == nil {
+		return false
+	}
+
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func askForPasswd(tty *TTY, opts pinentry.Settings) (string, *assuan.Error) {
+	dopts := terminal.DialogSettings{opts.Title, opts.Desc, opts.Prompt, opts.Opts.InvisibleChar}
+	orig := dopts
+	var firstbuf *memguard.LockedBuffer
+	firstlen := 0
+	for {
+		buf, n, err := terminal.AskForPassword(tty.file, tty.num, dopts)
+
+		if err != nil {
+			if err.Error() == "AskForPassword: prompt rejected" {
+				return "", &assuan.Error{
+					assuan.ErrSrcPinentry, assuan.ErrCanceled,
+					"pinentry", err.Error(),
+				}
+			}
+			return "", &assuan.Error{
+				assuan.ErrSrcPinentry, assuan.ErrAssuanServerFault,
+				"pinentry", err.Error(),
+			}
+		}
+
+		if len(opts.RepeatPrompt) != 0 {
+			if firstbuf != nil {
+				if eq(buf.Buffer()[:n], firstbuf.Buffer()[:firstlen]) {
+					return string(buf.Buffer()[:n]), nil
+				}
+
+				dopts = orig
+				dopts.Description = "\n\n" + opts.RepeatError
+
+				firstbuf = nil
+				firstlen = 0
+				continue
+			}
+
+			dopts = orig
+			dopts.Prompt = opts.RepeatPrompt
+			firstbuf = buf
+			firstlen = n
+		} else {
+			return string(buf.Buffer()[:n]), nil
+		}
+	}
+}
 
 func getPIN(tty *TTY, opts pinentry.Settings) (string, *assuan.Error) {
 	defer tty.file.WriteString(terminal.TermClear + terminal.TermReset)
@@ -21,26 +88,19 @@ func getPIN(tty *TTY, opts pinentry.Settings) (string, *assuan.Error) {
 	if len(opts.Title) == 0 {
 		opts.Title = "pinentry mode"
 	}
-
-	buf, n, err := terminal.AskForPassword(tty.file, tty.num, terminal.DialogSettings{
-		Title:       opts.Title,
-		Description: opts.Desc,
-		Prompt:      opts.Prompt,
-	})
-
-	if err != nil {
-		return "", &assuan.Error{
-			assuan.ErrSrcPinentry, assuan.ErrAssuanServerFault,
-			"pinentry", err.Error(),
-		}
+	if len(opts.RepeatError) == 0 {
+		opts.RepeatError = "Passwords do not match"
+	}
+	if len(opts.Opts.InvisibleChar) == 0 {
+		opts.Opts.InvisibleChar = "*"
 	}
 
-	return string(buf.Buffer()[:n]), nil
+	return askForPasswd(tty, opts)
 }
 
 func confirm(tty *TTY, opts pinentry.Settings) (bool, *assuan.Error) {
 	defer tty.file.WriteString(terminal.TermClear + terminal.TermReset)
-	if len(opts.Error) == 0 {
+	if len(opts.Error) != 0 {
 		opts.Desc += "\n\nERROR: " + opts.Error
 	}
 	if len(opts.Title) == 0 {
@@ -72,7 +132,7 @@ func confirm(tty *TTY, opts pinentry.Settings) (bool, *assuan.Error) {
 
 func msg(tty *TTY, opts pinentry.Settings) *assuan.Error {
 	defer tty.file.WriteString(terminal.TermClear + terminal.TermReset)
-	if len(opts.Error) == 0 {
+	if len(opts.Error) != 0 {
 		opts.Desc += "\n\nERROR: " + opts.Error
 	}
 	if len(opts.Title) == 0 {
@@ -84,8 +144,6 @@ func msg(tty *TTY, opts pinentry.Settings) *assuan.Error {
 		Description: opts.Desc,
 		Prompt:      opts.Prompt,
 	})
-
-	time.Sleep(5 * time.Second)
 
 	if err != nil {
 		return &assuan.Error{

@@ -44,10 +44,6 @@ TODO
 
   3. Make sure to restart gpg-agent: `gpgconf --kill gpg-agent`.
 
-  Known issues:
-  - ttyprompt _sometimes_ may crash X server if using nouveau driver (other driver may be affected too).
-    It's know that it will crash X server if used during key generation (???).
-
 Room for improvement
 ----------------------
 
@@ -55,7 +51,7 @@ Room for improvement
 - [x] Allow to select prompt TTY
 - [x] Implement pinentry emulation mode
   - [x] Implement Assuan protocol wrappers
-  - [ ] Fix video driver permission error.
+  - [x] Fix video driver permission error.
 - [ ] Polkit agent emulation mode
   - [ ] Find a way to handle multiple requests at same time
 - [ ] Split binary by mode (to be discussed)

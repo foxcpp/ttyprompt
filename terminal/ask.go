@@ -15,6 +15,7 @@ type DialogSettings struct {
 	Title       string
 	Description string
 	Prompt      string
+	PassChar    string
 }
 
 var FirstTty = -1
@@ -63,7 +64,7 @@ func LockTTY(tty *os.File) {
 ReadPassword configures TTY to non-canonical mode and reads password
 byte-by-byte showing '*' for each character.
 */
-func ReadPassword(tty *os.File, output []byte) ([]byte, error) {
+func ReadPassword(tty *os.File, output []byte, echoChar string) ([]byte, error) {
 	log.Println("Reading password...")
 	cursor := output[0:1]
 	readen := 0
@@ -89,7 +90,7 @@ func ReadPassword(tty *os.File, output []byte) ([]byte, error) {
 			}
 			continue
 		}
-		_, err = tty.WriteString("*")
+		_, err = tty.WriteString(echoChar)
 		if err != nil {
 			return nil, errors.New("ReadPassword: " + err.Error())
 		}
@@ -163,7 +164,7 @@ func AskForPassword(tty *os.File, ttyNum int, settings DialogSettings) (*memguar
 		return nil, 0, errors.New("AskForPassword: " + err.Error())
 	}
 
-	slice, err := ReadPassword(tty, bufHandle.Buffer())
+	slice, err := ReadPassword(tty, bufHandle.Buffer(), settings.PassChar)
 	if err != nil {
 		return nil, 0, err
 	}
