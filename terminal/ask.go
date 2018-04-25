@@ -44,22 +44,6 @@ func TurnOnRawIO(tty *os.File) (orig Termios, err error) {
 	return termiosOrig, nil
 }
 
-func UnlockTTY(tty *os.File) {
-	log.Println("Setting", tty.Name(), "access mode to 0620...")
-	err := os.Chmod(tty.Name(), 0620)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "failed to recover old access mode on", tty.Name(), ":", err)
-	}
-}
-
-func LockTTY(tty *os.File) {
-	log.Println("Setting", tty.Name(), "access mode to 0000...")
-	err := os.Chmod(tty.Name(), 0000)
-	if err != nil {
-		panic("failed to recover old access mode on " + tty.Name() + ": " + err.Error())
-	}
-}
-
 /*
 ReadPassword configures TTY to non-canonical mode and reads password
 byte-by-byte showing '*' for each character.

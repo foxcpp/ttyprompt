@@ -1,0 +1,1 @@
+SUBSYSTEM=="tty", KERNEL=="tty20", GROUP="ttyprompt", MODE="0660"

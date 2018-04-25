@@ -1,48 +1,40 @@
-[EXPERIMENTAL] ttyprompt
+ttyprompt
 ==========================
-**It's just a prototype, not a usable version.**
 
 Ask for passwords on separate TTY to combat X11 keyloggers.
+
+Yes, you may use Wayland but some people have reasons to stay with X.Org.
+If you have no idea what Wayland is - check it out and consider switching to it
+because this program is actually a dirty hack.
 
 Installation
 --------------
 
-Copy built binary to system directory (`/usr/local/bin`) and set
-`CAP_SYS_TTY_CONFIG` capability on it.  
+Included Makefile will take care of pre-configuration:
 ```
-# cp ttyprompt /usr/local/bin 
-# setcap cap_sys_tty_config=+ep /usr/local/bin/ttyprompt
+$ go build
+# make install
 ```
-
-Make sure prompt TTY (currently hardcoded as `/dev/tty20`) is writable and readable
-by your user.
 
 Usage
--------
+--------------
 
-* Simple Mode
+#### Simple Mode
 
 Just run ttyprompt, entered password will be written to stdout.
 
-There are some options you may want to use to customize dialog, see `ttyprompt --help`.
+There are some options you may want to use to customize dialog, see 
+`ttyprompt --help`.
 
-* Polkit Agent Mode (not implemeneted yet)
+#### Polkit Agent Mode 
 
-TODO
+Not implemeneted yet.
 
-* Pinentry Emulation Mode
+#### Pinentry Emulation Mode (GnuPG passphrase prompt)
 
-  ttyprompt can partially replace pinentry for GnuPG.
-
-  1. Create wrapper script with following contents:
-  ```
-  #!/bin/sh
-  ttyprompt --pinentry
-  ```
-
-  2. Add `pinentry-program path-to-wrapper-script` to `.gnupg/gpg-agent.conf`.
-
-  3. Make sure to restart gpg-agent: `gpgconf --kill gpg-agent`.
+Add `pinentry-program /usr/local/bin/pinentry-ttyprompt` to 
+`.gnupg/gpg-agent.conf`. Make sure to restart gpg-agent: `gpgconf --kill
+gpg-agent`.
 
 Room for improvement
 ----------------------
@@ -52,9 +44,10 @@ Room for improvement
 - [x] Implement pinentry emulation mode
   - [x] Implement Assuan protocol wrappers
   - [x] Fix video driver permission error.
+- [ ] Use advisory locking on TTY to prevent race conditions.
+- [ ] Use inotify to catch unwanted TTY access during sessions.
 - [ ] Polkit agent emulation mode
-  - [ ] Find a way to handle multiple requests at same time
-- [ ] Split binary by mode (to be discussed)
+- [ ] Modularize build (disable/enable polkit/pinentry mode using build tags)
 - [ ] All remaining `// TODO:` in code
 - [ ] Clean up code
 
@@ -67,6 +60,6 @@ encryption if possible.
 License
 ---------
 
-As usual: ttyprompt is published under terms of the MIT license. You can do
+As usual: ttyprompt is published under the terms of the MIT license. You can do
 anything as long as you keep copyright notice.
 
