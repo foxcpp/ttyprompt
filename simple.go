@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/foxcpp/ttyprompt/prompt"
 	"github.com/foxcpp/ttyprompt/terminal"
 )
 
@@ -14,7 +15,7 @@ finishNotifyChan is used to report errors because mode functions
 run asynchronously.
 */
 func simpleMode(tty *TTY, flags settings, finishNotifyChan chan error) {
-	buf, n, err := terminal.AskForPassword(tty.file, tty.num, flags.simple)
+	buf, n, err := prompt.AskForPassword(tty.file, tty.num, flags.simple)
 	if err != nil {
 		finishNotifyChan <- err
 		return

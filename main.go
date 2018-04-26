@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/awnumar/memguard"
+	"github.com/foxcpp/ttyprompt/prompt"
 	"github.com/foxcpp/ttyprompt/terminal"
 	flag "github.com/spf13/pflag"
 
@@ -23,7 +24,7 @@ type settings struct {
 	noChmod  bool
 	debugLog bool
 	ttyNum   int
-	simple   terminal.DialogSettings
+	simple   prompt.DialogSettings
 	pinentry bool
 }
 
@@ -110,8 +111,8 @@ func main() {
 	defer tty.file.WriteString(terminal.TermClear + terminal.TermReset)
 
 	if !flags.noChmod {
-		terminal.LockTTY(tty.file)
-		defer terminal.UnlockTTY(tty.file)
+		prompt.LockTTY(tty.file)
+		defer prompt.UnlockTTY(tty.file)
 	}
 
 	// TODO: Polkit agent mode.

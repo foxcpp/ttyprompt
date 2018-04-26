@@ -1,6 +1,9 @@
 package terminal
 
 import (
+	"errors"
+	"log"
+	"os"
 	"syscall"
 	"unsafe"
 )
@@ -13,6 +16,30 @@ type Termios struct {
 	Cc     [20]byte
 	Ispeed uint32
 	Ospeed uint32
+}
+
+/*
+TurnOnRawIO sets flags suitable for raw I/O (no echo, per-character input, etc)
+and returns original flags.
+*/
+func TurnOnRawIO(tty *os.File) (orig Termios, err error) {
+	log.Println("Turning on raw I/O on", tty.Name())
+
+	termios, err := TcGetAttr(tty.Fd())
+	if err != nil {
+		return Termios{}, errors.New("TurnOnRawIO: failed to get flags: " + err.Error())
+	}
+	termiosOrig := *termios
+
+	termios.Lflag &^= syscall.ECHO
+	termios.Lflag &^= syscall.ICANON
+	termios.Iflag &^= syscall.IXON
+	termios.Iflag |= syscall.IUTF8
+	err = TcSetAttr(tty.Fd(), termios)
+	if err != nil {
+		return Termios{}, errors.New("TurnOnRawIO: flags to set flags: " + err.Error())
+	}
+	return termiosOrig, nil
 }
 
 func TcSetAttr(fd uintptr, termios *Termios) error {

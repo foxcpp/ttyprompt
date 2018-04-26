@@ -7,6 +7,7 @@ import (
 	"github.com/awnumar/memguard"
 	assuan "github.com/foxcpp/go-assuan/common"
 	"github.com/foxcpp/go-assuan/pinentry"
+	"github.com/foxcpp/ttyprompt/prompt"
 	"github.com/foxcpp/ttyprompt/terminal"
 )
 
@@ -33,12 +34,12 @@ func eq(a, b []byte) bool {
 }
 
 func askForPasswd(tty *TTY, opts pinentry.Settings) (string, *assuan.Error) {
-	dopts := terminal.DialogSettings{opts.Title, opts.Desc, opts.Prompt, opts.Opts.InvisibleChar}
+	dopts := prompt.DialogSettings{opts.Title, opts.Desc, opts.Prompt, opts.Opts.InvisibleChar}
 	orig := dopts
 	var firstbuf *memguard.LockedBuffer
 	firstlen := 0
 	for {
-		buf, n, err := terminal.AskForPassword(tty.file, tty.num, dopts)
+		buf, n, err := prompt.AskForPassword(tty.file, tty.num, dopts)
 
 		if err != nil {
 			if err.Error() == "AskForPassword: prompt rejected" {
@@ -114,7 +115,7 @@ func confirm(tty *TTY, opts pinentry.Settings) (bool, *assuan.Error) {
 	}
 	opts.Prompt = fmt.Sprintf("Y = %s, n = %s: ", opts.OkBtn, opts.CancelBtn)
 
-	res, err := terminal.AskToConfirm(tty.file, tty.num, terminal.DialogSettings{
+	res, err := prompt.AskToConfirm(tty.file, tty.num, prompt.DialogSettings{
 		Title:       opts.Title,
 		Description: opts.Desc,
 		Prompt:      opts.Prompt,
@@ -139,7 +140,7 @@ func msg(tty *TTY, opts pinentry.Settings) *assuan.Error {
 		opts.Title = "pinentry mode"
 	}
 
-	err := terminal.ShowMessage(tty.file, tty.num, terminal.DialogSettings{
+	err := prompt.ShowMessage(tty.file, tty.num, prompt.DialogSettings{
 		Title:       opts.Title,
 		Description: opts.Desc,
 		Prompt:      opts.Prompt,

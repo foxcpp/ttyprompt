@@ -45,6 +45,7 @@ Room for improvement
   - [x] Implement Assuan protocol wrappers
   - [x] Fix video driver permission error.
 - [ ] Use advisory locking on TTY to prevent race conditions.
+- [ ] ssh-askpass?
 - [ ] Use inotify to detect unwanted TTY access during sessions.
 - [ ] Show "execution context" (parent process info, real UID/GID and similar)
 - [ ] Polkit agent emulation mode
