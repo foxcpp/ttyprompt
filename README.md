@@ -45,7 +45,8 @@ Room for improvement
   - [x] Implement Assuan protocol wrappers
   - [x] Fix video driver permission error.
 - [ ] Use advisory locking on TTY to prevent race conditions.
-- [ ] Use inotify to catch unwanted TTY access during sessions.
+- [ ] Use inotify to detect unwanted TTY access during sessions.
+- [ ] Show "execution context" (parent process info, real UID/GID and similar)
 - [ ] Polkit agent emulation mode
 - [ ] Modularize build (disable/enable polkit/pinentry mode using build tags)
 - [ ] All remaining `// TODO:` in code

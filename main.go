@@ -88,6 +88,7 @@ func main() {
 	if strings.HasSuffix(os.Args[0], "pinentry") {
 		parsePinentryFlags(&flags)
 	} else {
+		flags.simple.PassChar = "*"
 		parseRegularFlags(&flags)
 	}
 
