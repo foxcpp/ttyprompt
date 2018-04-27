@@ -66,8 +66,9 @@ func parseRegularFlags(flags *settings) {
 }
 
 func enableDebugLog() {
-	log.SetPrefix("DEBUG: ")
+	log.SetPrefix("DEBUG(ttyprompt): ")
 	log.SetOutput(os.Stderr)
+	log.SetFlags(0)
 
 	assuan.Logger.SetOutput(os.Stderr)
 	assuansrv.Logger.SetOutput(os.Stderr)

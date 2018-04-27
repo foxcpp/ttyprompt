@@ -1,2 +1,2 @@
 #!/bin/sh
-ttyprompt --pinentry "$@"
+exec ttyprompt --pinentry
