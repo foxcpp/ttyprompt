@@ -16,6 +16,16 @@ $ go build
 # make install
 ```
 
+As an additional security measure you may want to run ttyprompt as a separate user which will be only one member of ttyprompt:
+```
+# useradd -lMNr -s /sbin/nologin -g ttyprompt ttyprompt
+```
+To always run ttyprompt using this user account:
+```
+# chown ttyprompt /usr/local/bin/ttyprompt
+# chmod u+s /usr/local/bin/ttyprompt
+```
+
 Usage
 --------------
 
