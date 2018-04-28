@@ -1,0 +1,71 @@
+.TH ttyprompt 1 "April 28, 2018" "ttyprompt 0.1" "USER COMMANDS"
+.SH NAME
+ttyprompt \- Ask for passwords on different TTY to combat X11 keyloggers.
+.SH SYNOPSIS
+.B ttyprompt
+[\-h] [\-\-help] [\-D] [\-\-debug] [\-\-pinentry] [\-d description]
+[\-\-desc description] [\-\-prompt string] [\-\-title string] [\-t vt]
+[\-\-tty vt]
+.br
+.B ttyprompt-ssh
+.br
+.B pinentry-ttyprompt
+.SH DESCRIPTION
+It's easy to log keyboard presses in X Window System, just run the following command:
+.PP
+.nf
+    xinput test 9
+.fi
+.PP
+You will see "scan code" of each pressed and released key. Even with AppArmor
+and firejail. If there is security breach in your browser, your passwords can
+be stolen.
+.PP
+Not good, right? Yes, you can use Wayland but some people have reasons to stay
+with X.Org. This program provides a good workaround for these people.
+.PP
+ttyprompt "jumps" to prompt TTY, writes simple prompt, reads passwords and
+"jumps" back. Easy? Easy and xinput is blind.
+.PP
+.B Note:
+Last two commands are wrappers that allow to use ttyprompt as a pinentry or
+ssh-askpass implementation.
+.SH OPTIONS
+.TP
+.B \-h \-\-help
+show all options with short descriptions
+.TP
+.B \-D \-\-debug
+write debugging information to stderr
+.TP
+.B \-\-pinentry
+act like pinentry from GnuPG suite
+.TP
+.B \-d \-\-desc
+set request description; ignored with
+.B \-\-pinentry
+.TP
+.B \-\-prompt
+set prompt text; ignored with
+.B \-\-pinentry
+.TP
+.B \-t \-\-tty
+number of virtual terminal to use for dialog; default is 20 (/dev/tty20)
+.SH EXIT STATUS
+.TP
+.B 0
+success
+.TP
+.B 1
+invalid argument
+.TP
+.B 2
+request canceled
+.TP
+.B 3
+other error
+.SH REPORTING BUGS
+Use https://github.com/foxcpp/ttyprompt/issues for regular bugs and
+PGP-encrypted email for security vulnerabilities.
+.SH AUTHOR
+foxcpp (foxcpp (at) disroot.org)
