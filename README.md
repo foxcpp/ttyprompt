@@ -30,6 +30,13 @@ There are some options you may want to use to customize dialog, see
 
 Not implemeneted yet.
 
+#### ssh-askpass
+
+Set `SSH_ASKPASS` environment variable to `/usr/local/bin/ttyprompt-ssh`.
+
+**Note:** Check out https://unix.stackexchange.com/a/83991 if you want to
+always use ttyprompt for SSH.
+
 #### Pinentry Emulation Mode (GnuPG passphrase prompt)
 
 Add `pinentry-program /usr/local/bin/pinentry-ttyprompt` to 
@@ -45,7 +52,7 @@ Room for improvement
   - [x] Implement Assuan protocol wrappers
   - [x] Fix video driver permission error.
 - [x] Use advisory locking on TTY to prevent race conditions.
-- [ ] ssh-askpass?
+- [x] ssh-askpass
 - [ ] Use inotify to detect unwanted TTY access during sessions.
 - [x] Show "execution context" (parent process info, real UID/GID and similar)
 - [ ] Polkit agent emulation mode

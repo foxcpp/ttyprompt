@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/awnumar/memguard"
@@ -28,27 +27,7 @@ type settings struct {
 	pinentry bool
 }
 
-func parsePinentryFlags(flags *settings) {
-	flag.BoolVarP(&flags.debugLog, "debug", "d", false, "Write debug information to stderr")
-	flag.StringP("display", "D", "", "No-op")
-	flag.StringP("ttyname", "T", "", "No-op")
-	flag.StringP("ttytype", "N", "", "No-op; always 'linux'")
-	flag.StringP("lc-ctype", "C", "", "No-op")
-	flag.StringP("lc-messages", "M", "", "No-op")
-	flag.Int64P("timeout", "o", 0, "No-op; ttyprompt doesn't supports timeouts")
-	flag.BoolP("no-global-grab", "g", false, "No-op")
-	flag.BoolP("parent-wid", "W", false, "No-op")
-	flag.StringP("colors", "c", "", "No-op")
-	flag.StringP("ttyalert", "a", "", "No-op")
-
-	flag.IntVarP(&flags.ttyNum, "tty", "t", 20, "Number of VT (TTY) to use")
-
-	// Hide "pflag: help requested" if --help used.
-	flag.ErrHelp = errors.New("")
-	flag.Parse()
-}
-
-func parseRegularFlags(flags *settings) {
+func parseFlags(flags *settings) {
 	flag.BoolVarP(&flags.debugLog, "debug", "D", false, "Log debug information to stderr")
 
 	flag.IntVarP(&flags.ttyNum, "tty", "t", 20, "Number of VT (TTY) to use")
@@ -86,12 +65,8 @@ func main() {
 	defer memguard.DestroyAll()
 
 	flags := settings{}
-	if strings.HasSuffix(os.Args[0], "pinentry") {
-		parsePinentryFlags(&flags)
-	} else {
-		flags.simple.PassChar = "*"
-		parseRegularFlags(&flags)
-	}
+	flags.simple.PassChar = "*"
+	parseFlags(&flags)
 
 	if flags.debugLog {
 		enableDebugLog()
@@ -113,7 +88,7 @@ func main() {
 	prompt.LockTTY(tty.file)
 	defer prompt.UnlockTTY(tty.file)
 
-	res.file.WriteString("ttyprompt acquired this TTY\n")
+	tty.file.WriteString("ttyprompt acquired this TTY\n")
 
 	// TODO: Polkit agent mode.
 	resNotify := make(chan error)

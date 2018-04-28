@@ -9,9 +9,10 @@ install: ttyprompt
 	@install -D -g ttyprompt -m 0754 ttyprompt $(DESTDIR)/bin/ttyprompt
 	@setcap CAP_SYS_TTY_CONFIG=+ep $(DESTDIR)/bin/ttyprompt
 	@install -D -g ttyprompt -m 0754 pinentry.sh $(DESTDIR)/bin/pinentry-ttyprompt
+	@install -D -g ttyprompt -m 0754 ssh.sh $(DESTDIR)/bin/ttyprompt-ssh
 	@install -D 90-ttyprompt.rules $(DESTDIR)/lib/udev/rules.d/90-ttyprompt.rules
-	@chown :ttyprompt /dev/tty20
-	@chmod 0660 /dev/tty20
+	@chown :ttyprompt /dev/tty{20,21,22,23}
+	@chmod 0660 /dev/tty{20,21,22,23}
 	@echo Installed successfully! Now add your user \(or user you want to be
 	@echo able to use ttyprompt\) to ttyprompt group and you are done.
 	@echo
