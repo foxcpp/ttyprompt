@@ -31,7 +31,5 @@ func getTTY(num int) (res *TTY, err error) {
 		return
 	}
 
-	res.file.WriteString("ttyprompt acquired this TTY\n")
-
 	return
 }

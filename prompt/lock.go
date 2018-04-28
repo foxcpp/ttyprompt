@@ -1,38 +1,23 @@
 package prompt
 
 import (
-	"fmt"
 	"log"
 	"os"
-)
-
-const (
-	lockedMode  os.FileMode = 0000
-	defaultMode             = 620
+	"syscall"
 )
 
 func UnlockTTY(tty *os.File) {
-	info, _ := tty.Stat()
-	if info.Mode()&os.ModePerm != lockedMode {
-		return
-	}
-	log.Println("Setting", tty.Name(), "access mode to 0620...")
-	err := os.Chmod(tty.Name(), 0620)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "failed to recover old access mode on", tty.Name(), ":", err)
-	}
+	log.Println("Unlocking", tty.Name()+"...")
+	syscall.FcntlFlock(tty.Fd(), syscall.F_UNLCK, &syscall.Flock_t{
+		Type: syscall.F_WRLCK,
+		Pid:  int32(os.Getpid()),
+	})
 }
 
 func LockTTY(tty *os.File) {
-	info, _ := tty.Stat()
-	if info.Mode()&os.ModePerm != defaultMode {
-		log.Println("Skipping chmod lock because of non-default permissions...")
-		return
-	}
-
-	log.Println("Setting", tty.Name(), "access mode to 0000...")
-	err := os.Chmod(tty.Name(), 0000)
-	if err != nil {
-		panic("failed to recover old access mode on " + tty.Name() + ": " + err.Error())
-	}
+	log.Println("Locking", tty.Name()+"...")
+	syscall.FcntlFlock(tty.Fd(), syscall.F_SETLKW, &syscall.Flock_t{
+		Type: syscall.F_WRLCK,
+		Pid:  int32(os.Getpid()),
+	})
 }

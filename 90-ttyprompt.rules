@@ -1,1 +1,8 @@
+# Simple mode (default).
 SUBSYSTEM=="tty", KERNEL=="tty20", GROUP="ttyprompt", MODE="0660"
+# Pinentry.
+SUBSYSTEM=="tty", KERNEL=="tty21", GROUP="ttyprompt", MODE="0660"
+# Reserved for polkit agent.
+SUBSYSTEM=="tty", KERNEL=="tty22", GROUP="ttyprompt", MODE="0660"
+# Reserved for ssh-askpass.
+SUBSYSTEM=="tty", KERNEL=="tty23", GROUP="ttyprompt", MODE="0660"

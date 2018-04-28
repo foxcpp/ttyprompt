@@ -52,7 +52,6 @@ func parseRegularFlags(flags *settings) {
 	flag.BoolVarP(&flags.debugLog, "debug", "D", false, "Log debug information to stderr")
 
 	flag.IntVarP(&flags.ttyNum, "tty", "t", 20, "Number of VT (TTY) to use")
-	flag.BoolVar(&flags.noChmod, "no-chmod", false, "Don't do chmod 000 on used TTY")
 
 	flag.StringVar(&flags.simple.Title, "title", "Experimental!", "Title text (simple mode only)")
 	flag.StringVarP(&flags.simple.Description, "desc", "d", "*no detailed description*", "Detailed description (simple mode only)")
@@ -111,10 +110,10 @@ func main() {
 	// In case of signal terminal may be left in unclear state.
 	defer tty.file.WriteString(terminal.TermClear + terminal.TermReset)
 
-	if !flags.noChmod {
-		prompt.LockTTY(tty.file)
-		defer prompt.UnlockTTY(tty.file)
-	}
+	prompt.LockTTY(tty.file)
+	defer prompt.UnlockTTY(tty.file)
+
+	res.file.WriteString("ttyprompt acquired this TTY\n")
 
 	// TODO: Polkit agent mode.
 	resNotify := make(chan error)

@@ -1,2 +1,2 @@
 #!/bin/sh
-exec ttyprompt --pinentry
+exec ttyprompt --pinentry --tty 21
