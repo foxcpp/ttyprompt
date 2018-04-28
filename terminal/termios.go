@@ -34,6 +34,7 @@ func TurnOnRawIO(tty *os.File) (orig Termios, err error) {
 	termios.Lflag &^= syscall.ECHO
 	termios.Lflag &^= syscall.ICANON
 	termios.Iflag &^= syscall.IXON
+	termios.Lflag &^= syscall.ISIG
 	termios.Iflag |= syscall.IUTF8
 	err = TcSetAttr(tty.Fd(), termios)
 	if err != nil {

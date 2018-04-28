@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/awnumar/memguard"
@@ -38,6 +39,10 @@ func ReadPassword(tty *os.File, output []byte, echoChar string) ([]byte, error) 
 		}
 		if cursor[0] == '\n' {
 			break
+		}
+		// Esc or Ctrl+D or Ctrl+C.
+		if cursor[0] == '\x1b' || cursor[0] == '\x04' || cursor[0] == '\x03' {
+			return nil, errors.New("ReadPassword: prompt rejected")
 		}
 		if cursor[0] == '\x7F' /* DEL */ {
 			if readen != 0 {
@@ -82,13 +87,21 @@ func WritePrompt(tty *os.File, settings DialogSettings) error {
 	}
 
 	fullPrompt := terminal.TermClear + terminal.TermReset
-	fullPrompt += "ttyprompt v0.1 | " + settings.Title + "\n"
+	fullPrompt += "ttyprompt v0.1"
+	if len(settings.Title) != 0 {
+		fullPrompt += " | " + strings.TrimSpace(settings.Title)
+	}
+	fullPrompt += "\n"
 	fullPrompt += "\n"
 	fullPrompt += ctx.String()
-	fullPrompt += "\n\n"
-	fullPrompt += settings.Description
 	fullPrompt += "\n"
-	fullPrompt += settings.Prompt + " "
+	if len(settings.Description) != 0 {
+		fullPrompt += "\n"
+		fullPrompt += strings.TrimSpace(settings.Description)
+		fullPrompt += "\n"
+	}
+	fullPrompt += "\n"
+	fullPrompt += strings.TrimSpace(settings.Prompt) + " "
 	_, err = tty.WriteString(fullPrompt)
 	if err != nil {
 		return errors.New("WritePrompt: " + err.Error())
@@ -113,7 +126,6 @@ func AskForPassword(tty *os.File, ttyNum int, settings DialogSettings) (*memguar
 	}
 	defer switchToOriginalVT(tty, firsttty)
 
-	settings.Description += "\n\nJust press <Enter> to reject request."
 	if WritePrompt(tty, settings); err != nil {
 		return nil, 0, err
 	}
@@ -132,9 +144,6 @@ func AskForPassword(tty *os.File, ttyNum int, settings DialogSettings) (*memguar
 	slice, err := ReadPassword(tty, bufHandle.Buffer(), settings.PassChar)
 	if err != nil {
 		return nil, 0, err
-	}
-	if len(slice) == 0 {
-		return nil, 0, errors.New("AskForPassword: prompt rejected")
 	}
 	return bufHandle, len(slice), nil
 }

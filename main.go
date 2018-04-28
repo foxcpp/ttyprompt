@@ -32,8 +32,8 @@ func parseFlags(flags *settings) {
 
 	flag.IntVarP(&flags.ttyNum, "tty", "t", 20, "Number of VT (TTY) to use")
 
-	flag.StringVar(&flags.simple.Title, "title", "Experimental!", "Title text (simple mode only)")
-	flag.StringVarP(&flags.simple.Description, "desc", "d", "*no detailed description*", "Detailed description (simple mode only)")
+	flag.StringVar(&flags.simple.Title, "title", "", "Title text (simple mode only)")
+	flag.StringVarP(&flags.simple.Description, "desc", "d", "", "Detailed description (simple mode only)")
 	flag.StringVar(&flags.simple.Prompt, "prompt", "Enter password:", "Prompt text (simple mode only)")
 
 	flag.BoolVar(&flags.pinentry, "pinentry", false, "Enable pinentry emulation mode")
@@ -78,7 +78,7 @@ func main() {
 	tty, err := getTTY(flags.ttyNum)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "failed to get target tty access:", err)
-		exitCode = 2
+		exitCode = 3
 		return
 	}
 	defer tty.free()
@@ -113,7 +113,11 @@ func main() {
 	case err := <-resNotify:
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			exitCode = 1
+			if err.Error() == "ReadPassword: prompt rejected" {
+				exitCode = 1
+			} else {
+				exitCode = 3
+			}
 		}
 	}
 }
