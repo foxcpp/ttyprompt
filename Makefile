@@ -1,13 +1,9 @@
 DESTDIR ?= /usr/local/
 
-# Obviously it will not cover dependencies, but should we care?
-ttyprompt: $(shell find . -name "*.go")
-	go build
-
 install: ttyprompt
 	@groupadd -f ttyprompt
 	@install -D -g ttyprompt -m 0754 ttyprompt $(DESTDIR)/bin/ttyprompt
-	@setcap CAP_SYS_TTY_CONFIG=+ep $(DESTDIR)/bin/ttyprompt
+	@setcap CAP_SYS_TTY_CONFIG,CAP_IPC_LOCK=+ep $(DESTDIR)/bin/ttyprompt
 	@install -D -g ttyprompt -m 0754 dist/pinentry-ttyprompt $(DESTDIR)/bin/pinentry-ttyprompt
 	@install -D -g ttyprompt -m 0754 dist/ttyprompt-ssh $(DESTDIR)/bin/ttyprompt-ssh
 	@install -D dist/90-ttyprompt.rules $(DESTDIR)/lib/udev/rules.d/90-ttyprompt.rules

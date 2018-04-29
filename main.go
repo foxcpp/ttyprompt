@@ -20,7 +20,6 @@ import (
 )
 
 type settings struct {
-	noChmod  bool
 	debugLog bool
 	ttyNum   int
 	simple   prompt.DialogSettings
@@ -73,6 +72,8 @@ func main() {
 	} else {
 		log.SetOutput(ioutil.Discard)
 	}
+
+	lockProcMem()
 
 	log.Println("Getting TTY...")
 	tty, err := getTTY(flags.ttyNum)

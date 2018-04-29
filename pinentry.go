@@ -1,3 +1,5 @@
+// +build !nopinentry
+
 package main
 
 import (

@@ -26,6 +26,13 @@ To always run ttyprompt using this user account:
 # chmod u+s /usr/local/bin/ttyprompt
 ```
 
+#### Build tags
+
+| Tag           | Meaning                              |
+| ------------- | ------------------------------------ |
+| `nomlock`     | Don't lock entire memory of process. |
+| `nopinentry`  | Disable pinentry mode support.       |
+
 Usage
 --------------
 
@@ -63,10 +70,11 @@ Room for improvement
   - [x] Fix video driver permission error.
 - [x] Use advisory locking on TTY to prevent race conditions.
 - [x] ssh-askpass
-- [ ] Use inotify to detect unwanted TTY access during sessions.
 - [x] Show "execution context" (parent process info, real UID/GID and similar)
 - [ ] Polkit agent emulation mode
-- [ ] Modularize build (disable/enable polkit/pinentry mode using build tags)
+  - [ ] Polkit Authority interface wrapper
+  - [ ] PAM wrapper
+- [x] Modularize build (disable/enable polkit/pinentry mode using build tags)
 - [ ] All remaining `// TODO:` in code
 - [ ] Clean up code
 
