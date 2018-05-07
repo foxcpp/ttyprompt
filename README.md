@@ -54,11 +54,27 @@ Set `SSH_ASKPASS` environment variable to `/usr/local/bin/ttyprompt-ssh`.
 **Note:** Check out https://unix.stackexchange.com/a/83991 if you want to
 always use ttyprompt for SSH.
 
+**Note 2:** `setsid` trick breaks group-only execution mode set on ttyprompt
+binary and scripts. To use it you should run the following command first:
+```
+chmod o+x /usr/local/bin/*ttyprompt*
+```
+
+#### sudo
+
+`ttyprompt-ssh` works for sudo too:
+```sh
+export SSH_ASKPASS=/usr/local/bin/ttyprompt-ssh
+```
+
+Then use `sudo -A` instead of just `sudo`.
+
+
 #### Pinentry Emulation Mode (GnuPG passphrase prompt)
 
 Add `pinentry-program /usr/local/bin/pinentry-ttyprompt` to 
-`.gnupg/gpg-agent.conf`. Make sure to restart gpg-agent: `gpgconf --kill
-gpg-agent`.
+`.gnupg/gpg-agent.conf`. Make sure to restart gpg-agent: 
+`gpgconf --kill gpg-agent`.
 
 Room for improvement
 ----------------------
