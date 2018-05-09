@@ -10,9 +10,11 @@ because this program is actually a dirty hack.
 Installation
 --------------
 
-Included Makefile will take care of pre-configuration:
+Install Golang toolchain (https://golang.org/dl).
+
+Included Makefile will take care of everything else:
 ```
-$ go build
+$ make
 # make install
 ```
 
