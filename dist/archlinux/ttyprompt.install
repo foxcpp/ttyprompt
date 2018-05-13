@@ -1,0 +1,20 @@
+_setup_perms() {
+    chown :ttyprompt /usr/bin/ttyprompt /usr/bin/ttyprompt-ssh /usr/bin/pinentry-ttyprompt
+    setcap CAP_SYS_TTY_CONFIG,CAP_IPC_LOCK=+ep /usr/bin/ttyprompt
+}
+
+post_install() {
+    _setup_perms
+
+    echo ">> Add yourself to 'ttyprompt' group to be able to use ttyprompt."
+}
+
+post_upgrade() {
+    _setup_perms
+}
+
+post_remove() {
+    # "Rollback" installed udev rule.
+    chown :tty /dev/tty2{0,1,2,3}
+    chmod u=rw,g=r,o= /dev/tty2{0,1,2,3}
+}
