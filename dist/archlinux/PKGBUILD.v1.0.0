@@ -14,10 +14,10 @@ install=ttyprompt.install
 source=("$pkgname-$pkgver.tar.gz::https://github.com/foxcpp/ttyprompt/archive/v$pkgver.tar.gz"
         "$pkgname-$pkgver.tar.gz.sig::https://github.com/foxcpp/ttyprompt/releases/download/v$pkgver/source.tar.gz.sig"
         "ttyprompt.sysusers")
-sha512sums=("d8680b87f97e7df5ba316b01c7dc6699e30f68b6bcfbb005d7630e79de1e4862dacdfcff18fcc685cf0b980349c307802c833fbd81ec77fa6138894d6cc426e1"
+sha512sums=("04655c0ff2588783e621263e257d6b15cccfd7dc6a23cee2acd7cf772ad5b176c62c485019b5fdfa0353ae159f31bd1339bd70b7b78ae83f94d6524086bcfc1d"
             "SKIP"
             "a7e94b1e28b40f648ec5afab20a00d0300dc70c6d84741c34a08ef2958695ae91ce1ab59240239aa192de3b36ee0e15b2f5a1680f755e5b420a55bc884f6910d")
-validpgpkeys=("2499BEB8B47B0235009A5F0AEE8384B0561A25AF")
+validpgpkeys=("3197BBD95137E682A59717B434BB2007081396F4")
 
 prepare() {
 	cd "$srcdir/$pkgname-$pkgver"
