@@ -47,11 +47,14 @@ There are some options you may want to use to customize dialog, see
 
 #### Polkit Agent Mode 
 
-Not implemeneted yet.
+Not implemeneted yet (issue #1).
 
 #### ssh-askpass
 
 Set `SSH_ASKPASS` environment variable to `/usr/local/bin/ttyprompt-ssh`.
+```sh
+export SSH_ASKPASS=/usr/local/bin/ttyprompt-ssh
+```
 
 **Note:** Check out https://unix.stackexchange.com/a/83991 if you want to
 always use ttyprompt for SSH.
@@ -62,11 +65,12 @@ binary and scripts. To use it you should run the following command first:
 chmod o+x /usr/local/bin/*ttyprompt*
 ```
 
+
 #### sudo
 
 `ttyprompt-ssh` works for sudo too:
 ```sh
-export SSH_ASKPASS=/usr/local/bin/ttyprompt-ssh
+export SUDO_ASKPASS=/usr/local/bin/ttyprompt-ssh
 ```
 
 Then use `sudo -A` instead of just `sudo`.
