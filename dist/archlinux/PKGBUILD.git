@@ -22,7 +22,7 @@ pkgver() {
 }
 
 prepare() {
-	cd "$srcdir/$pkgname"
+    cd "$srcdir/$pkgname"
     export GOPATH="$srcdir/gopath"
     export GOBIN="$srcdir/gobin"
     mkdir -p $GOBIN $GOPATH/src/github.com/foxcpp/
@@ -34,17 +34,17 @@ build() {
     export GOPATH="$srcdir/gopath"
     export GOBIN="$srcdir/gobin"
     go get -v
-	CGO_ENABLED=0 GOOS=linux go build -o ttyprompt -ldflags '--extldflags "-static"'
+    CGO_ENABLED=0 GOOS=linux go build -o ttyprompt -ldflags '--extldflags "-static"'
 }
 
 package() {
-	cd "$srcdir/$pkgname"
-	install -D -m 0754 ttyprompt "$pkgdir/usr/bin/ttyprompt"
-	install -D -m 0754 dist/pinentry-ttyprompt "$pkgdir/usr/bin/pinentry-ttyprompt"
-	install -D -m 0754 dist/ttyprompt-ssh "$pkgdir/usr/bin/ttyprompt-ssh"
-	install -D dist/90-ttyprompt.rules "$pkgdir/usr/lib/udev/rules.d/90-ttyprompt.rules"
-	install -D dist/ttyprompt.1 "$pkgdir/usr/share/man/man1/ttyprompt.1"
-	install -D dist/ttyprompt-ssh.1 "$pkgdir/usr/share/man/man1/ttyprompt-ssh.1"
-	install -D dist/pinentry-ttyprompt.1 "$pkgdir/usr/share/man/man1/pinentry-ttyprompt.1"
+    cd "$srcdir/$pkgname"
+    install -D -m 0754 ttyprompt "$pkgdir/usr/bin/ttyprompt"
+    install -D -m 0754 dist/pinentry-ttyprompt "$pkgdir/usr/bin/pinentry-ttyprompt"
+    install -D -m 0754 dist/ttyprompt-ssh "$pkgdir/usr/bin/ttyprompt-ssh"
+    install -D dist/90-ttyprompt.rules "$pkgdir/usr/lib/udev/rules.d/90-ttyprompt.rules"
+    install -D dist/ttyprompt.1 "$pkgdir/usr/share/man/man1/ttyprompt.1"
+    install -D dist/ttyprompt-ssh.1 "$pkgdir/usr/share/man/man1/ttyprompt-ssh.1"
+    install -D dist/pinentry-ttyprompt.1 "$pkgdir/usr/share/man/man1/pinentry-ttyprompt.1"
     install -Dm 644 "$srcdir/ttyprompt.sysusers" "$pkgdir/usr/lib/sysusers.d/$pkgname.conf"
 }
