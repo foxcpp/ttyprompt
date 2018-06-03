@@ -3,7 +3,7 @@ prefix ?= /usr/local/
 .PHONY: ttyprompt clean install uninstall
 
 ttyprompt:
-	go get -v
+	go get -v -d ./...  # Get ttyprompt deps
 	CGO_ENABLED=0 GOOS=linux go build -o ttyprompt -ldflags '--extldflags "-static"'
 
 clean:
@@ -33,7 +33,7 @@ uninstall:
 	@rm -f $(DESTDIR)$(prefix)/bin/pinentry-ttyprompt
 	@rm -f $(DESTDIR)$(prefix)/bin/ttyprompt-ssh
 	@rm -f $(DESTDIR)$(prefix)/lib/udev/rules.d/90-ttyprompt.rules
-	@$(chown) :tty /dev/tty{20,21,22,23}
-	@$(chmod) 0640 /dev/tty{20,21,22,23}
-	@$(groupdel) -f ttyprompt
+	@chown :tty /dev/tty{20,21,22,23}
+	@chmod 0640 /dev/tty{20,21,22,23}
+	@groupdel -f ttyprompt
 

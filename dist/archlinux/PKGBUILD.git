@@ -1,6 +1,6 @@
 # Maintainer: foxcpp <foxcpp at disroot dot org>
 pkgname=ttyprompt-git
-pkgver=v1.0.0.r0.67a7916
+pkgver=v1.0.0.r3.393e70d
 pkgrel=1
 pkgdesc="Ask for passwords on different TTY to combat X11 keyloggers (development version)"
 arch=("x86_64")
@@ -33,7 +33,7 @@ build() {
     cd "$srcdir/$pkgname"
     export GOPATH="$srcdir/gopath"
     export GOBIN="$srcdir/gobin"
-    go get -v
+    go get -v -d ./...
     CGO_ENABLED=0 GOOS=linux go build -o ttyprompt -ldflags '--extldflags "-static"'
 }
 

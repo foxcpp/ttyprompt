@@ -10,6 +10,9 @@ because this program is actually a dirty hack.
 Installation
 --------------
 
+**Note:** ttyprompt requires special permissions (file capabilities) to be set
+on executable, plain `go get` will not set them.
+
 Install Golang toolchain (https://golang.org/dl).
 
 Included Makefile will take care of everything else:
@@ -18,7 +21,8 @@ $ make
 # make install
 ```
 
-As an additional security measure you may want to run ttyprompt as a separate user which will be only one member of ttyprompt:
+As an additional security measure you may want to run ttyprompt as a separate
+user which will be only one member of ttyprompt:
 ```
 # useradd -lMNr -s /sbin/nologin -g ttyprompt ttyprompt
 ```
@@ -81,24 +85,6 @@ Then use `sudo -A` instead of just `sudo`.
 Add `pinentry-program /usr/local/bin/pinentry-ttyprompt` to 
 `.gnupg/gpg-agent.conf`. Make sure to restart gpg-agent: 
 `gpgconf --kill gpg-agent`.
-
-Room for improvement
-----------------------
-
-- [x] Make prompt customizable in simple mode
-- [x] Allow to select prompt TTY
-- [x] Implement pinentry emulation mode
-  - [x] Implement Assuan protocol wrappers
-  - [x] Fix video driver permission error.
-- [x] Use advisory locking on TTY to prevent race conditions.
-- [x] ssh-askpass
-- [x] Show "execution context" (parent process info, real UID/GID and similar)
-- [ ] Polkit agent emulation mode
-  - [ ] Polkit Authority interface wrapper
-  - [ ] PAM wrapper
-- [x] Modularize build (disable/enable polkit/pinentry mode using build tags)
-- [ ] All remaining `// TODO:` in code
-- [ ] Clean up code
 
 Security issues
 -----------------
